@@ -90,7 +90,7 @@ button{font-family:inherit;cursor:pointer}
 <p>Visite 3D de notre bibliothèque. Installez-vous, la visite commence quand vous touchez le bouton.</p>
 <div id="ldr"><i></i></div><p id="ldt">Ta bibliothèque se prépare… quelques secondes</p>
 <button class="big" id="bGo" disabled>Entrer dans la bibliothèque</button>
-<div style="margin-top:10px;font:11px sans-serif;opacity:.35;color:#f6e3b0">v35</div>
+<div style="margin-top:10px;font:11px sans-serif;opacity:.35;color:#f6e3b0">v36</div>
 </div>
 <script>console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation' );
 /**
@@ -393,9 +393,9 @@ function bookLedge(id,side,z,imgKey){
  const cp=new T.Mesh(new T.PlaneGeometry(bw,bh),new T.MeshBasicMaterial({map:cov,toneMapped:false}));cp.position.z=.032;bk.add(cp);
  const hl=new T.Mesh(new T.PlaneGeometry(bw*2.3,bh*1.7),new T.MeshBasicMaterial({map:glowTexB(),color:cc,transparent:true,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false,opacity:.9}));hl.position.z=-.03;hl.renderOrder=2;bk.add(hl);
  const lk={brutale:HLINK.flip}[id]||HLINK.bea,lk2={brutale:HLINK.amz}[id]||HLINK.bea;
- HOST.btn.push({m:cp,url:lk,flash:-1e9,still:true,tab:id=='brutale'?'brutale':null});
- const pl=new T.Mesh(new T.PlaneGeometry(.46,.46*112/512),new T.MeshBasicMaterial({map:pillTex(id=='brutale'?'Tomes  ›':'Découvrir  ›',col),transparent:true,alphaTest:.05,depthWrite:false,toneMapped:false}));pl.position.set(0,.05,.215);pl.rotation.x=-.85;pl.renderOrder=6;g.add(pl);
- HOST.btn.push({m:pl,url:lk2,flash:-1e9,tab:id=='brutale'?'brutale':null});
+ HOST.btn.push({m:cp,url:lk,flash:-1e9,still:true,tab:id});
+ const pl=new T.Mesh(new T.PlaneGeometry(.46,.46*112/512),new T.MeshBasicMaterial({map:pillTex('Tomes  ›',col),transparent:true,alphaTest:.05,depthWrite:false,toneMapped:false}));pl.position.set(0,.05,.215);pl.rotation.x=-.85;pl.renderOrder=6;g.add(pl);
+ HOST.btn.push({m:pl,url:lk2,flash:-1e9,tab:id});
 }
 let _gB=null;function glowTexB(){return _gB||(_gB=tex(128,128,(g,w,h)=>{const gr=g.createRadialGradient(64,64,6,64,64,64);gr.addColorStop(0,'rgba(255,255,255,.55)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,w,h);}));}
 function buildBookLedges(){[['conflit',-1,-5.6,'c_conflit'],['brutale',-1,-4.1,'c_brutale'],['lignees',-1,-2.6,'c_lignees'],['masque',-1,.4,'c_masque'],['vendeur',1,-4.1,'c_vendeur'],['nour',1,-2.6,'p_nour']].forEach(a=>bookLedge(a[0],a[1],a[2],a[3]));}
@@ -416,7 +416,13 @@ function buildSideButtons(){
 const RAY=new T.Raycaster(),RV=new T.Vector2();let lastTapOk=true;
 
 /* ---------- tablette des tomes (pancartes sous les tableaux) ---------- */
-const TABS={brutale:{title:'BRUTALE',sub:'Les ombres du périph',cover:'c_brutale',vid:'brutale',out:1,flip:()=>HLINK.flip,amz:()=>HLINK.amz}};
+const NOLINK=()=>HLINK.bea;
+const TABS={brutale:{title:'BRUTALE',sub:'Les ombres du périph',cover:'c_brutale',vid:'brutale',out:1,flip:()=>HLINK.flip,amz:()=>HLINK.amz},
+ conflit:{title:'CONFLIT RADICAL',sub:'Mike V.',cover:'c_conflit',vid:'conflit',out:0,flip:NOLINK,amz:NOLINK},
+ lignees:{title:'LES LIGNÉES MAUDITES',sub:'Léa Norand',cover:'c_lignees',vid:'lignees',out:0,flip:NOLINK,amz:NOLINK},
+ masque:{title:'SOUS LE MASQUE',sub:'Léa Norand',cover:'c_masque',vid:'masque',out:0,flip:NOLINK,amz:NOLINK},
+ vendeur:{title:'VENDEUR D’ILLUSIONS',sub:'Axelle Vance',cover:'c_vendeur',vid:'vendeur',out:0,flip:NOLINK,amz:NOLINK},
+ nour:{title:'NØUR',sub:'Le 47ème vœu',cover:'p_nour',vid:'nour',out:0,flip:NOLINK,amz:NOLINK}};
 let TABCUR=null;
 function openLink(u){const w=window.open(u,'_blank');if(w){try{w.opener=null;}catch(e){}}else{location.href=u;}}
 function tabClock(){const d=new Date();$('tclk').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
