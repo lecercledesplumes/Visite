@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Éditeur de visite 3D</title>
+<style>
+:root{--bg:#faf7f2;--fg:#2a2118;--card:#fff;--mut:#7a6b5a;--ac:#8a5a2b;--bd:#e3d8c8;--wa:#b4531f;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1612;--fg:#f1e8dc;--card:#262019;--mut:#b09c86;--ac:#e0a964;--bd:#3a3128;--wa:#f0a070;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1612;--fg:#f1e8dc;--card:#262019;--mut:#b09c86;--ac:#e0a964;--bd:#3a3128;--wa:#f0a070;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,sans-serif;padding:14px;max-width:720px;margin-inline:auto}
+h1{font-size:20px;margin:4px 0 2px}h2{font-size:16px;margin:0 0 8px}
+p.s,.s{color:var(--mut);margin:0 0 10px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:12px}
+button,.btn{background:var(--ac);color:var(--bg);border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer;display:inline-block}
+button.g{background:transparent;color:var(--ac);border:1px solid var(--ac)}
+button.ch{padding:6px 11px;font-size:14px;border-radius:99px;margin:0 4px 6px 0}
+button.ch.on{background:var(--ac);color:var(--bg)}
+button:disabled{opacity:.4}
+input[type=file]{display:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.it{border:2px solid var(--bd);border-radius:10px;padding:4px;text-align:center;cursor:pointer;background:var(--bg);font-size:12px;color:var(--fg)}
+.it.on{border-color:var(--ac)}
+.th{display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#8883 0 25%,transparent 0 50%) 0 0/12px 12px;border-radius:6px}
+.it .th{height:70px;margin-bottom:3px}.it img{max-width:100%;max-height:70px}
+.pv{display:flex;gap:10px;flex-wrap:wrap}.pv .th{width:130px;height:110px}.pv img{max-width:100%;max-height:100%}
+.row{display:flex;gap:6px;align-items:center;margin:6px 0;flex-wrap:wrap}
+.row label{font-size:13px;color:var(--mut)}
+.row input[type=number]{width:72px;padding:6px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--fg);font:inherit}
+.pl{border-top:1px solid var(--bd);padding-top:6px;margin-top:8px}
+.wa{color:var(--wa);font-size:14px;margin:0 0 10px}
+#msg{color:var(--ac);font-size:14px;min-height:20px}
+.hide{display:none}
+</style></head><body>
+<h1>Éditeur de visite 3D</h1>
+<p class="s">Charge ta visite, change l’image d’un élément, puis télécharge le fichier <b>index.html</b> prêt à être remplacé sur GitHub.</p>
+
+<div class="card" id="s1">
+  <h2>1. Ta visite</h2>
+  <label class="btn" for="fv">Choisir le fichier index.html</label><input id="fv" type="file" accept=".html,text/html">
+  <span id="fn" class="s"></span>
+</div>
+
+<div class="card hide" id="s2">
+  <h2>2. Choisis l’élément à changer</h2>
+  <div id="cats"></div>
+  <p class="wa hide" id="wcat"></p>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="card hide" id="s3">
+  <h2>3. Nouvelle image : <span id="kn"></span></h2>
+  <div class="pv"><div><div class="s">Actuelle</div><div class="th"><img id="cur" alt=""></div></div>
+  <div><div class="s">Nouvelle</div><div class="th"><img id="nw" alt=""></div></div></div>
+  <p class="wa hide" id="wtile">Mur, sol, plafond : l’image se répète en mosaïque. Choisis une texture « sans couture », sinon les raccords se verront. La visite ajoute aussi une teinte chaude : les couleurs seront un peu adoucies.</p>
+  <div class="row"><label class="btn" for="fi">Choisir une image</label><input id="fi" type="file" accept="image/*">
+  <button class="g" id="pa">Coller</button></div>
+  <div class="row" id="bgrow"><label><input type="checkbox" id="bg"> Supprimer le fond uni</label>
+  <label>Tolérance <input type="range" id="tol" min="5" max="90" value="30"></label></div>
+  <p class="s">Le mieux : une image PNG/WebP à fond transparent.</p>
+  <button id="ap" disabled>Remplacer dans la visite</button>
+  <div class="pl" id="pls"></div>
+</div>
+
+<div class="card hide" id="s4">
+  <h2>4. Télécharger</h2>
+  <p class="s">Le fichier s’appelle déjà <b>index.html</b>. Sur GitHub, garde d’abord une copie de l’ancien, puis envoie celui-ci dans le dépôt « Visite » et valide.</p>
+  <button id="dl">Télécharger index.html</button>
+</div>
+<div id="msg"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+let src='',A={},TR={},aIdx=-1,aEnd=-1,tIdx=-1,tEnd=-1,P=[],sel=null,newData=null,baseCv=null,cat='Structure';
+const say=t=>$('msg').textContent=t;
+const NAMES={wall:'Mur',floor:'Sol',ceil:'Plafond',door:'Porte',curtain:'Rideaux',f_club:'Fauteuil club',f_nord:'Fauteuil nordique',f_oreil:'Fauteuil à oreilles',f_mod:'Fauteuil moderne',f_sofa:'Canapé',desk:'Bureau',counter:'Comptoir',shelf:'Étagère',ladder:'Échelle',tbl1:'Table 1',tbl2:'Table 2',tbl3:'Table 3',tbl4:'Table 4',t_noy:'Table noyer',t_ver:'Table verre',t_mar:'Table marbre',k_per:'Tapis persan',k_beige:'Tapis beige',k_round:'Tapis rond',lamp_f:'Lampe sur pied',lamp_t:'Lampe de table',susp:'Suspension',roses:'Roses',globe:'Globe',books_s:'Livres',bag1:'Sac 1',bag2:'Sac 2',screen_led:'Écran LED',aud:'Audio',logo:'Logo',ttlogo:'Logo TikTok',host:'Hôte',host2:'Hôte 2',host_m:'Hôte (m)',host_k:'Hôte (k)'};
+const TILE=new Set(['wall','floor','ceil']);
+const CATS=['Structure','Meubles','Tapis','Lumières','Déco','Écran','Personnages','Couvertures','Logos'];
+const WARN={Personnages:'Attention : les personnages sont liés à des animations et à des vidéos. Change-les avec prudence et vérifie la visite ensuite.',Couvertures:'Attention : les couvertures et séries sont aussi liées à tes tomes. Vérifie la visite après le changement.'};
+function catOf(k){
+  if(/^(wall|floor|ceil|door|curtain)$/.test(k))return 'Structure';
+  if(/^(f_|desk|counter|shelf|ladder|tbl|t_)/.test(k))return 'Meubles';
+  if(/^k_/.test(k))return 'Tapis';
+  if(/^(lamp|susp)/.test(k))return 'Lumières';
+  if(/^(pA_|pB_|roses|globe|books|bag)/.test(k))return 'Déco';
+  if(/^(screen|aud)/.test(k))return 'Écran';
+  if(/^(host|cw|r_)/.test(k))return 'Personnages';
+  if(/^(s_|c_|p_)/.test(k))return 'Couvertures';
+  return 'Logos';}
+const label=k=>NAMES[k]||k;
+
+function parse(){
+  aIdx=src.indexOf('const A={');if(aIdx<0)throw new Error('Bloc d’images introuvable');
+  aEnd=src.indexOf('\n',aIdx);A=JSON.parse(src.slice(aIdx+8,aEnd).trim().replace(/;$/,''));
+  tIdx=src.indexOf('const TRIMD=');
+  if(tIdx>=0){tEnd=src.indexOf('};',tIdx)+1;TR=JSON.parse(src.slice(tIdx+12,tEnd));}
+  P=[];const re=/(?<![\w.])prop\('(\w+)',\s*(-?[\d.]+),\s*(-?[\d.]+)(?:,\s*\{([^}]*)\})?\)/g;let m;
+  while((m=re.exec(src)))P.push({i:m.index,len:m[0].length,k:m[1],x:+m[2],z:+m[3],o:m[4]||'',ox:+m[2],oz:+m[3],oo:m[4]||''});
+}
+function build(){
+  let out=src;const ed=[];
+  for(const p of P){if(p.x===p.ox&&p.z===p.oz&&p.o===p.oo)continue;
+    ed.push([p.i,p.len,`prop('${p.k}',${p.x},${p.z}${p.o?',{'+p.o+'}':''})`]);}
+  if(tIdx>=0)ed.push([tIdx,tEnd-tIdx,'const TRIMD='+JSON.stringify(TR)]);
+  ed.push([aIdx,aEnd-aIdx,'const A='+JSON.stringify(A)+';']);
+  ed.sort((a,b)=>b[0]-a[0]);
+  for(const [i,l,t] of ed)out=out.slice(0,i)+t+out.slice(i+l);
+  return out;}
+function drawCats(){
+  const box=$('cats');box.innerHTML='';
+  CATS.forEach(c=>{const n=Object.keys(A).filter(k=>catOf(k)===c).length;if(!n)return;
+    const b=document.createElement('button');b.className='ch g'+(c===cat?' on':'');b.textContent=c+' ('+n+')';
+    b.onclick=()=>{cat=c;drawCats();drawGrid();};box.appendChild(b);});}
+function drawGrid(){
+  const g=$('grid');g.innerHTML='';const w=$('wcat');w.textContent=WARN[cat]||'';w.classList.toggle('hide',!WARN[cat]);
+  Object.keys(A).filter(k=>catOf(k)===cat).forEach(k=>{
+    const d=document.createElement('div');d.className='it'+(k===sel?' on':'');d.dataset.k=k;
+    d.innerHTML='<div class="th"><img alt=""></div>';d.querySelector('img').src=A[k];
+    d.appendChild(document.createTextNode(label(k)));d.onclick=()=>choose(k);g.appendChild(d);});}
+$('fv').onchange=async e=>{const f=e.target.files[0];if(!f)return;say('Lecture…');
+  try{src=await f.text();parse();}catch(err){say('Fichier non reconnu : '+err.message);return;}
+  $('fn').textContent=f.name;say('');sel=null;cat='Structure';drawCats();drawGrid();
+  ['s2','s4'].forEach(i=>$(i).classList.remove('hide'));$('s3').classList.add('hide');};
+function choose(k){sel=k;newData=null;baseCv=null;$('ap').disabled=true;$('nw').removeAttribute('src');$('bg').checked=false;
+  document.querySelectorAll('.it').forEach(d=>d.classList.toggle('on',d.dataset.k===k));
+  $('kn').textContent=label(k);$('cur').src=A[k];$('s3').classList.remove('hide');
+  $('wtile').classList.toggle('hide',!TILE.has(k));$('bgrow').classList.toggle('hide',TILE.has(k));
+  const box=$('pls');box.innerHTML='';
+  const ps=P.filter(p=>p.k===k);
+  if(ps.length)box.innerHTML='<div class="s">Emplacements (mètres) — x : gauche/droite, z : avant/arrière</div>';
+  else box.innerHTML='<div class="s">Position non réglable ici : seule l’image change, l’élément reste à sa place.</div>';
+  ps.forEach((p,n)=>{const m=/\b([wh]):\s*(-?[\d.]+)/.exec(p.o);const d=document.createElement('div');d.className='row';
+    d.innerHTML=`<label>#${n+1} x</label><input type="number" step="0.05" value="${p.x}"><label>z</label><input type="number" step="0.05" value="${p.z}">`+
+      (m?`<label>${m[1]==='w'?'largeur':'hauteur'}</label><input type="number" step="0.05" value="${m[2]}">`:'');
+    const ins=d.querySelectorAll('input');
+    ins[0].oninput=()=>p.x=+ins[0].value;ins[1].oninput=()=>p.z=+ins[1].value;
+    if(m)ins[2].oninput=()=>{p.o=p.o.replace(/\b([wh]):\s*(-?[\d.]+)/,(s,a)=>a+':'+ins[2].value);};
+    box.appendChild(d);});
+  $('s3').scrollIntoView({behavior:'smooth'});}
+function loadBlob(b){const u=URL.createObjectURL(b);const im=new Image();im.onload=()=>{
+  const M=1400,s=Math.min(1,M/Math.max(im.width,im.height));const c=document.createElement('canvas');
+  c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+  baseCv=c;URL.revokeObjectURL(u);render();};im.src=u;}
+$('fi').onchange=e=>{if(e.target.files[0])loadBlob(e.target.files[0]);};
+$('pa').onclick=async()=>{try{const it=await navigator.clipboard.read();for(const i of it){const t=i.types.find(x=>x.startsWith('image/'));if(t){loadBlob(await i.getType(t));return;}}say('Aucune image dans le presse-papiers.');}catch(e){say('Collage impossible ici : utilise « Choisir une image ».');}};
+document.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].find(x=>x.type.startsWith('image/'));if(f&&sel)loadBlob(f);});
+$('bg').onchange=$('tol').oninput=()=>baseCv&&render();
+function render(){
+  const c=document.createElement('canvas');c.width=baseCv.width;c.height=baseCv.height;const g=c.getContext('2d');g.drawImage(baseCv,0,0);
+  if($('bg').checked&&!TILE.has(sel)){const d=g.getImageData(0,0,c.width,c.height),a=d.data,W=c.width,H=c.height;
+    let r=0,gg=0,b=0;[[0,0],[W-1,0],[0,H-1],[W-1,H-1]].forEach(([x,y])=>{const o=(y*W+x)*4;r+=a[o];gg+=a[o+1];b+=a[o+2];});r/=4;gg/=4;b/=4;
+    const T=+$('tol').value*4.4,seen=new Uint8Array(W*H),st=[];
+    const close=o=>Math.hypot(a[o]-r,a[o+1]-gg,a[o+2]-b)<T||a[o+3]<10;
+    for(let x=0;x<W;x++){st.push(x,x+(H-1)*W);}for(let y=0;y<H;y++){st.push(y*W,y*W+W-1);}
+    while(st.length){const i=st.pop();if(seen[i])continue;const o=i*4;if(!close(o))continue;seen[i]=1;a[o+3]=0;const x=i%W,y=(i/W)|0;
+      if(x>0)st.push(i-1);if(x<W-1)st.push(i+1);if(y>0)st.push(i-W);if(y<H-1)st.push(i+W);}
+    g.putImageData(d,0,0);}
+  newData={c};c.toBlob(b=>{const fr=new FileReader();fr.onload=()=>{newData.uri=fr.result;$('nw').src=fr.result;$('ap').disabled=false;};fr.readAsDataURL(b);},'image/webp',.9);}
+function trim(c){const g=c.getContext('2d'),W=c.width,H=c.height,d=g.getImageData(0,0,W,H).data;let t=-1,b=-1;
+  for(let y=0;y<H&&t<0;y++){let n=0;for(let x=0;x<W;x++)if(d[(y*W+x)*4+3]>60)n++;if(n>W*.004)t=y;}
+  for(let y=H-1;y>=0&&b<0;y--){let n=0;for(let x=0;x<W;x++)if(d[(y*W+x)*4+3]>60)n++;if(n>W*.004)b=y;}
+  return{t:+(Math.max(0,t)/H).toFixed(5),b:+((H-1-Math.max(0,b))/H).toFixed(5)};}
+$('ap').onclick=()=>{if(!sel||!newData?.uri)return;A[sel]=newData.uri;if(!TILE.has(sel))TR[sel]=trim(newData.c);
+  document.querySelectorAll('.it').forEach(d=>{if(d.dataset.k===sel)d.querySelector('img').src=newData.uri;});
+  $('cur').src=newData.uri;say('Image remplacée : '+label(sel)+'. Tu peux en changer d’autres, puis télécharger.');};
+$('dl').onclick=async()=>{try{const dl=await claude.use('downloads');if(!dl){say('Téléchargement indisponible dans cette vue.');return;}
+  await dl.save({filename:'index.html',data:new Blob([build()],{type:'text/html'})});say('Fichier index.html prêt.');}
+  catch(e){say(e&&e.code==='declined'?'Téléchargement annulé.':'Erreur : '+(e.message||e));}};
+</script></body></html>
